@@ -34,7 +34,7 @@ cd ..
 npm install
 ```
 
-The root `npm install` re-links workspaces so the new extension is picked up. Then add the new workspace name to the CI fan-out matrix in `.circleci/config.yml` (`workflows.all.jobs.test-ext.matrix.parameters.ext`) so the new extension is linted, built, and tested on every push.
+The root `npm install` re-links workspaces so the new extension is picked up. Then add the new workspace name to the CI fan-out matrix in `.circleci/config.yml` (`workflows.all.jobs.build-ext.matrix.parameters.ext`) so the new extension is linted, built, and tested on every push.
 
 ## Dev loop
 
@@ -52,7 +52,7 @@ Run from the repo root to fan out across every extension, or from a single exten
 
 CircleCI config lives in `.circleci/config.yml`. Two workflows:
 
-- **`all`** — the default. Runs on every push and fans out a parallel job per extension (lint + build + test + package). The fan-out uses a matrix listing extension workspace names. When you add a new extension, append its workspace name to the matrix under `workflows.all.jobs.test-ext.matrix.parameters.ext` in `.circleci/config.yml`.
+- **`all`** — the default. Runs on every push and fans out a parallel job per extension (lint + build + test + package). The fan-out uses a matrix listing extension workspace names. When you add a new extension, append its workspace name to the matrix under `workflows.all.jobs.build-ext.matrix.parameters.ext` in `.circleci/config.yml`.
 - **`one`** — runs only when the pipeline is triggered with an `extension` parameter, scoping the same checks to a single workspace.
 
 Each job produces the extension's `.foxe` package and uploads it as a CircleCI artifact under the `foxe/` prefix. These artifacts are the files you would submit to the [Foxglove extension registry](https://github.com/foxglove/extension-registry) — download them from the pipeline's **Artifacts** tab.

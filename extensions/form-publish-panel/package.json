@@ -2,10 +2,13 @@
   "name": "form-publish-panel",
   "displayName": "Form Publish",
   "description": "Publish JSON messages by filling out a form defined by typed properties, inspired by Foxglove event types.",
-  "publisher": "unknown",
+  "publisher": "levlaz.org",
+  "author": {
+    "name": "Lev Lazinskiy"
+  },
   "homepage": "",
   "version": "0.0.0",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "main": "./dist/extension.js",
   "keywords": [],
   "scripts": {

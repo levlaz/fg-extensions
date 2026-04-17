@@ -15,9 +15,11 @@ Open the panel's settings and configure:
 - **Fields** — the ordered list of typed properties. Each field has:
   - **Key** — the JSON key used in the published message
   - **Label** — the human-readable label shown in the form
-  - **Type** — one of: `text`, `multiline`, `number`, `boolean`, `select`, `multiselect`
+  - **Type** — one of: `text`, `multiline`, `number`, `boolean`, `select`, `multiselect`, `json`
   - **Options** — comma-separated values (used for `select` and `multiselect`)
   - **Default** — optional default value
+
+The `json` type accepts a raw JSON string (e.g. `{"x": 1, "y": 2}` or `[1, 2, 3]`). At submission time the string is parsed and embedded in the published message as the corresponding JSON value — not as a quoted string. Invalid JSON blocks submission and surfaces an inline error.
 
 ## Publish
 

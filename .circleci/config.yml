@@ -19,7 +19,7 @@ executors:
 jobs:
   # Lint, build, test, and package a single extension workspace,
   # uploading the resulting .foxe file as a build artifact.
-  test-ext:
+  build-ext:
     executor: node20
     parameters:
       ext:
@@ -56,8 +56,8 @@ workflows:
     when:
       equal: ["", << pipeline.parameters.extension >>]
     jobs:
-      - test-ext:
-          name: test-<< matrix.ext >>
+      - build-ext:
+          name: build-<< matrix.ext >>
           matrix:
             parameters:
               ext:
@@ -70,6 +70,6 @@ workflows:
     unless:
       equal: ["", << pipeline.parameters.extension >>]
     jobs:
-      - test-ext:
-          name: test-<< pipeline.parameters.extension >>
+      - build-ext:
+          name: build-<< pipeline.parameters.extension >>
           ext: << pipeline.parameters.extension >>

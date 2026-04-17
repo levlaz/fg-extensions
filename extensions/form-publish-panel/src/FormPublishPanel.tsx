@@ -18,7 +18,14 @@ import {
 } from "react";
 import { createRoot } from "react-dom/client";
 
-type FieldType = "text" | "multiline" | "number" | "boolean" | "select" | "multiselect";
+type FieldType =
+  | "text"
+  | "multiline"
+  | "number"
+  | "boolean"
+  | "select"
+  | "multiselect"
+  | "json";
 
 type FieldDef = {
   id: string;
@@ -34,6 +41,7 @@ type PanelConfig = {
   schemaName: string;
   messageTypeName: string;
   color: string;
+  debug: boolean;
   fields: FieldDef[];
 };
 
@@ -42,6 +50,7 @@ const DEFAULT_CONFIG: PanelConfig = {
   schemaName: "",
   messageTypeName: "Untitled message",
   color: "#4287f5",
+  debug: false,
   fields: [],
 };
 
@@ -52,6 +61,7 @@ const FIELD_TYPE_OPTIONS: Array<{ label: string; value: FieldType }> = [
   { label: "True/False", value: "boolean" },
   { label: "Single-select", value: "select" },
   { label: "Multi-select", value: "multiselect" },
+  { label: "JSON", value: "json" },
 ];
 
 function newFieldId(): string {
@@ -93,6 +103,7 @@ function coerceConfig(raw: unknown): PanelConfig {
         ? r.messageTypeName
         : DEFAULT_CONFIG.messageTypeName,
     color: typeof r.color === "string" ? r.color : DEFAULT_CONFIG.color,
+    debug: typeof r.debug === "boolean" ? r.debug : DEFAULT_CONFIG.debug,
     fields,
   };
 }
@@ -104,7 +115,8 @@ function isFieldType(v: unknown): v is FieldType {
     v === "number" ||
     v === "boolean" ||
     v === "select" ||
-    v === "multiselect"
+    v === "multiselect" ||
+    v === "json"
   );
 }
 
@@ -122,7 +134,23 @@ function initialValueForField(field: FieldDef): unknown {
     case "text":
     case "multiline":
     case "select":
+    case "json":
       return "";
+  }
+}
+
+type JsonParseResult =
+  | { ok: true; value: unknown }
+  | { ok: false; error: string };
+
+function parseJsonFieldValue(raw: unknown): JsonParseResult {
+  if (typeof raw !== "string" || raw.trim().length === 0) {
+    return { ok: true, value: null };
+  }
+  try {
+    return { ok: true, value: JSON.parse(raw) };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
 
@@ -140,6 +168,15 @@ function FormPublishPanel({ context }: { context: PanelExtensionContext }): Reac
     kind: "idle",
     message: "",
   });
+  const [lastPublished, setLastPublished] = useState<
+    | {
+        topic: string;
+        schemaName: string;
+        payload: Record<string, unknown>;
+        timestamp: Date;
+      }
+    | undefined
+  >();
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
 
   // Keep values in sync with config.fields — when a field is added, seed its default;
@@ -206,14 +243,33 @@ function FormPublishPanel({ context }: { context: PanelExtensionContext }): Reac
       if (!field.key) {
         continue;
       }
+      if (field.type === "json") {
+        const parsed = parseJsonFieldValue(values[field.id]);
+        if (!parsed.ok) {
+          setStatus({
+            kind: "error",
+            message: `Invalid JSON in field "${field.label || field.key}": ${parsed.error}`,
+          });
+          return;
+        }
+        payload[field.key] = parsed.value;
+        continue;
+      }
       payload[field.key] = values[field.id];
     }
     try {
       context.advertise(config.topic, config.schemaName);
       context.publish(config.topic, payload);
+      const timestamp = new Date();
+      setLastPublished({
+        topic: config.topic,
+        schemaName: config.schemaName,
+        payload,
+        timestamp,
+      });
       setStatus({
         kind: "success",
-        message: `Published to ${config.topic} at ${new Date().toLocaleTimeString()}`,
+        message: `Published to ${config.topic} at ${timestamp.toLocaleTimeString()}`,
       });
     } catch (err) {
       setStatus({
@@ -304,6 +360,40 @@ function FormPublishPanel({ context }: { context: PanelExtensionContext }): Reac
           {status.message}
         </div>
       )}
+
+      {config.debug && (
+        <div
+          style={{
+            marginTop: "0.25rem",
+            padding: "0.6rem 0.75rem",
+            borderRadius: "4px",
+            border: "1px dashed rgba(127,127,127,0.5)",
+            fontSize: "0.8rem",
+            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+            background: "rgba(127,127,127,0.08)",
+            overflow: "auto",
+          }}
+        >
+          <div style={{ fontWeight: 600, marginBottom: "0.35rem", opacity: 0.8 }}>
+            Debug: last published message
+          </div>
+          {lastPublished ? (
+            <>
+              <div style={{ opacity: 0.75, marginBottom: "0.25rem" }}>
+                {lastPublished.timestamp.toISOString()} → <code>{lastPublished.topic}</code>{" "}
+                (<code>{lastPublished.schemaName}</code>)
+              </div>
+              <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                {JSON.stringify(lastPublished.payload, null, 2)}
+              </pre>
+            </>
+          ) : (
+            <div style={{ opacity: 0.6 }}>
+              Nothing published yet. Submit the form to see the raw JSON here.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -325,6 +415,7 @@ function FieldInput({
   );
 
   let input: ReactElement;
+  let hint: ReactElement | undefined;
   switch (field.type) {
     case "text":
       input = (
@@ -415,14 +506,63 @@ function FieldInput({
       );
       break;
     }
+    case "json": {
+      const raw = typeof value === "string" ? value : "";
+      const parsed = parseJsonFieldValue(raw);
+      input = (
+        <textarea
+          value={raw}
+          rows={4}
+          spellCheck={false}
+          placeholder='e.g. {"x": 1.0, "y": 2.0} or [1, 2, 3]'
+          onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
+            onChange(e.target.value);
+          }}
+          style={{
+            ...inputStyle,
+            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+            resize: "vertical",
+            borderColor: parsed.ok ? inputStyle.border?.toString() : "#d33",
+          }}
+        />
+      );
+      hint = parsed.ok ? (
+        raw.trim().length > 0 ? (
+          <span style={{ fontSize: "0.75rem", opacity: 0.6 }}>
+            Parsed as {describeJsonType(parsed.value)} — will be published as nested JSON, not a string.
+          </span>
+        ) : (
+          <span style={{ fontSize: "0.75rem", opacity: 0.5 }}>
+            Leave empty to publish <code>null</code>.
+          </span>
+        )
+      ) : (
+        <span style={{ fontSize: "0.75rem", color: "#d33" }}>Invalid JSON: {parsed.error}</span>
+      );
+      break;
+    }
   }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
       {label}
       {input}
+      {hint}
     </div>
   );
+}
+
+function describeJsonType(value: unknown): string {
+  if (value == undefined) {
+    return "null";
+  }
+  if (Array.isArray(value)) {
+    return `array (${value.length})`;
+  }
+  if (typeof value === "object") {
+    return `object (${Object.keys(value as Record<string, unknown>).length} keys)`;
+  }
+  return typeof value;
 }
 
 const inputStyle: CSSProperties = {
@@ -451,6 +591,9 @@ function applySettingsAction(config: PanelConfig, action: SettingsTreeAction): P
       }
       if (key === "color" && typeof value === "string") {
         return { ...config, color: value };
+      }
+      if (key === "debug" && typeof value === "boolean") {
+        return { ...config, debug: value };
       }
     }
     if (path.length === 3 && path[0] === "fields") {
@@ -597,6 +740,12 @@ function buildSettingsNodes(
           value: config.schemaName,
           placeholder: "e.g. std_msgs/String",
         },
+        debug: {
+          label: "Debug mode",
+          input: "boolean",
+          value: config.debug,
+          help: "When enabled, show the raw JSON payload of the most recently published message in the panel.",
+        },
       },
     },
     fields: {
@@ -649,6 +798,15 @@ function defaultValueField(field: FieldDef): SettingsTreeFields {
           label: "Default",
           input: "string",
           value: typeof field.defaultValue === "string" ? field.defaultValue : "",
+        },
+      };
+    case "json":
+      return {
+        defaultValue: {
+          label: "Default (raw JSON)",
+          input: "multiline-string",
+          value: typeof field.defaultValue === "string" ? field.defaultValue : "",
+          placeholder: '{"example": 1}',
         },
       };
   }
