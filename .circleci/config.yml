@@ -1,7 +1,8 @@
 version: 2.1
 
-# Pass `extension: <name>` when triggering a pipeline to run the
-# single-extension workflow instead of the default fan-out.
+# Pass `extension: <name>` when triggering a pipeline to scope the run
+# to a single workspace. Otherwise every extension listed in the `all`
+# workflow's matrix runs in parallel.
 parameters:
   extension:
     type: string
@@ -16,27 +17,9 @@ executors:
       - image: cimg/node:20.19
 
 jobs:
-  # Lints, builds, and tests every extension via npm workspace fan-out.
-  # Adding a new extension under extensions/ requires no changes here.
-  test-all:
-    executor: node20
-    steps:
-      - checkout
-      - node/install-packages:
-          pkg-manager: npm
-      - run:
-          name: Lint
-          command: npm run lint
-      - run:
-          name: Build
-          command: npm run build
-      - run:
-          name: Test
-          command: npm test
-
-  # Same checks, scoped to one workspace. Triggered via the `extension`
-  # pipeline parameter.
-  test-one:
+  # Lint, build, test, and package a single extension workspace,
+  # uploading the resulting .foxe file as a build artifact.
+  test-ext:
     executor: node20
     parameters:
       ext:
@@ -54,18 +37,39 @@ jobs:
       - run:
           name: Test << parameters.ext >>
           command: npm --workspace << parameters.ext >> test --if-present
+      - run:
+          name: Package << parameters.ext >>
+          command: npm --workspace << parameters.ext >> run package
+      - run:
+          name: Collect .foxe artifact
+          command: |
+            mkdir -p /tmp/foxe
+            cp extensions/<< parameters.ext >>/*.foxe /tmp/foxe/
+      - store_artifacts:
+          path: /tmp/foxe
+          destination: foxe
 
 workflows:
+  # Default workflow: fan out across every extension in parallel.
+  # Add new extensions to the matrix list below.
   all:
     when:
       equal: ["", << pipeline.parameters.extension >>]
     jobs:
-      - test-all
+      - test-ext:
+          name: test-<< matrix.ext >>
+          matrix:
+            parameters:
+              ext:
+                - example-panel
+                - form-publish-panel
 
+  # Scoped workflow: runs only when the pipeline is triggered with an
+  # `extension` parameter.
   one:
     unless:
       equal: ["", << pipeline.parameters.extension >>]
     jobs:
-      - test-one:
+      - test-ext:
           name: test-<< pipeline.parameters.extension >>
           ext: << pipeline.parameters.extension >>
