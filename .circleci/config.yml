@@ -1,0 +1,71 @@
+version: 2.1
+
+# Pass `extension: <name>` when triggering a pipeline to run the
+# single-extension workflow instead of the default fan-out.
+parameters:
+  extension:
+    type: string
+    default: ""
+
+orbs:
+  node: circleci/node@5
+
+executors:
+  node20:
+    docker:
+      - image: cimg/node:20.19
+
+jobs:
+  # Lints, builds, and tests every extension via npm workspace fan-out.
+  # Adding a new extension under extensions/ requires no changes here.
+  test-all:
+    executor: node20
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: npm
+      - run:
+          name: Lint
+          command: npm run lint
+      - run:
+          name: Build
+          command: npm run build
+      - run:
+          name: Test
+          command: npm test
+
+  # Same checks, scoped to one workspace. Triggered via the `extension`
+  # pipeline parameter.
+  test-one:
+    executor: node20
+    parameters:
+      ext:
+        type: string
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: npm
+      - run:
+          name: Lint << parameters.ext >>
+          command: npm --workspace << parameters.ext >> run lint
+      - run:
+          name: Build << parameters.ext >>
+          command: npm --workspace << parameters.ext >> run build
+      - run:
+          name: Test << parameters.ext >>
+          command: npm --workspace << parameters.ext >> test --if-present
+
+workflows:
+  all:
+    when:
+      equal: ["", << pipeline.parameters.extension >>]
+    jobs:
+      - test-all
+
+  one:
+    unless:
+      equal: ["", << pipeline.parameters.extension >>]
+    jobs:
+      - test-one:
+          name: test-<< pipeline.parameters.extension >>
+          ext: << pipeline.parameters.extension >>
