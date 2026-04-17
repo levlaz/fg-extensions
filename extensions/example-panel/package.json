@@ -4,7 +4,7 @@
   "description": "",
   "publisher": "unknown",
   "homepage": "",
-  "version": "0.0.0",
+  "version": "0.0.0+f26a7f2",
   "license": "UNLICENSED",
   "main": "./dist/extension.js",
   "keywords": [],

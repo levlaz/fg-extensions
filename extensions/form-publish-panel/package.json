@@ -7,7 +7,7 @@
     "name": "Lev Lazinskiy"
   },
   "homepage": "",
-  "version": "0.0.0",
+  "version": "0.0.0+f26a7f2",
   "license": "MIT",
   "main": "./dist/extension.js",
   "keywords": [],
