@@ -1,4 +1,4 @@
-# foxglove-extensions
+# Lev's Foxglove Extensions 
 
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/levlaz/fg-extensions/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/levlaz/fg-extensions/tree/main)
 
