@@ -16,7 +16,7 @@ foxglove-extensions/
 
 ## Requirements
 
-- Node.js 20+ (see `.nvmrc`)
+- Node.js 24+ (see `.nvmrc`)
 - Foxglove Studio desktop (for `local-install` verification)
 
 ## Getting started

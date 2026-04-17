@@ -12,15 +12,15 @@ orbs:
   node: circleci/node@5
 
 executors:
-  node20:
+  node24:
     docker:
-      - image: cimg/node:20.19
+      - image: cimg/node:24.0
 
 jobs:
   # Lint, build, test, and package a single extension workspace,
   # uploading the resulting .foxe file as a build artifact.
   build-ext:
-    executor: node20
+    executor: node24
     parameters:
       ext:
         type: string
