@@ -1,6 +1,8 @@
 # foxglove-extensions
 
-A personal collection of [Foxglove Studio](https://foxglove.dev/) extensions, organized as an npm workspaces monorepo.
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/levlaz/fg-extensions/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/levlaz/fg-extensions/tree/main)
+
+A personal collection of [Foxglove](https://foxglove.dev/) extensions, organized as an npm workspaces monorepo.
 
 Each extension is a self-contained package under `extensions/` built with the [`@foxglove/extension`](https://www.npmjs.com/package/@foxglove/extension) SDK and scaffolded via the official [`create-foxglove-extension`](https://github.com/foxglove/create-foxglove-extension) generator.
 
@@ -17,7 +19,7 @@ foxglove-extensions/
 ## Requirements
 
 - Node.js 24+ (see `.nvmrc`)
-- Foxglove Studio desktop (for `local-install` verification)
+- Foxglove desktop (for `local-install` verification)
 
 ## Getting started
 
@@ -43,7 +45,7 @@ Run from the repo root to fan out across every extension, or from a single exten
 | Command | What it does |
 | --- | --- |
 | `npm run build` | Compile each extension's `dist/extension.js`. |
-| `npm run local-install` | Build and copy each extension to `~/.foxglove-studio/extensions/`. Restart Foxglove Studio to see changes. |
+| `npm run local-install` | Build and copy each extension to `~/.foxglove-studio/extensions/`. Restart Foxglove to see changes. |
 | `npm run package` | Produce a distributable `.foxe` per extension. |
 | `npm run lint` / `npm run lint:fix` | Lint across all extensions. |
 | `npm run clean` | Remove each extension's build output. |
