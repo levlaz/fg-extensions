@@ -61,8 +61,6 @@ workflows:
           matrix:
             parameters:
               ext:
-                - example-panel
-                - extension-demo
                 - form-publish-panel
 
   # Scoped workflow: runs only when the pipeline is triggered with an

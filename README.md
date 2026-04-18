@@ -12,7 +12,6 @@ Each extension is a self-contained package under `extensions/` built with the [`
 foxglove-extensions/
 ├── package.json              # workspaces root
 └── extensions/
-    ├── example-panel/        # scaffolding reference
     └── form-publish-panel/   # form-driven JSON publisher
 ```
 
@@ -61,7 +60,7 @@ Each job produces the extension's `.foxe` package and uploads it as a CircleCI a
 
 ### Trigger a single-extension run
 
-Via the CircleCI UI: click **Trigger Pipeline** and set parameter `extension` to the workspace name (e.g., `example-panel`).
+Via the CircleCI UI: click **Trigger Pipeline** and set parameter `extension` to the workspace name (e.g., `form-publish-panel`).
 
 Via the API:
 
@@ -69,12 +68,12 @@ Via the API:
 curl -X POST https://circleci.com/api/v2/project/gh/<org>/<repo>/pipeline \
   -H "Circle-Token: $CIRCLE_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"parameters": {"extension": "example-panel"}}'
+  -d '{"parameters": {"extension": "form-publish-panel"}}'
 ```
 
 Locally, scope any root script to one workspace with npm's `--workspace` flag:
 
 ```sh
-npm --workspace example-panel run build
-npm --workspace example-panel run lint
+npm --workspace form-publish-panel run build
+npm --workspace form-publish-panel run lint
 ```
