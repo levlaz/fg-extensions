@@ -1,6 +1,6 @@
 import { PanelExtensionContext, Topic, MessageEvent } from "@foxglove/extension";
 import { CompressedImage } from "@foxglove/schemas";
-import { useLayoutEffect, useEffect, useState, useRef, useMemo } from "react";
+import { useLayoutEffect, useEffect, useState, useRef, useMemo, ReactElement } from "react";
 import { createRoot } from "react-dom/client";
 
 type ImageMessage = MessageEvent<CompressedImage>;
@@ -28,7 +28,7 @@ async function drawImageOnCanvas(imgData: Uint8Array, canvas: HTMLCanvasElement,
   ctx.resetTransform();
 }
 
-function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Element {
+function ExamplePanel({ context }: { context: PanelExtensionContext }): ReactElement {
   const [topics, setTopics] = useState<readonly Topic[] | undefined>();
   const [message, setMessage] = useState<ImageMessage>();
 
@@ -68,7 +68,7 @@ function ExamplePanel({ context }: { context: PanelExtensionContext }): JSX.Elem
   useEffect(() => {
     if (message) {
       drawImageOnCanvas(message.message.data, canvasRef.current!, message.message.format).catch(
-        (error) => {
+        (error: unknown) => {
           console.log(error);
         },
       );
